@@ -49,7 +49,7 @@ Add McChatSetup to your plugin:
     <dependency>
         <groupId>com.mongenscave</groupId>
         <artifactId>mc-ChatSetup</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.3</version>
     </dependency>
 </dependencies>
 ```
@@ -63,7 +63,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.mongenscave:mc-ChatSetup:1.0.0'
+    implementation 'com.mongenscave:mc-ChatSetup:1.0.3'
 }
 ```
 

@@ -31,7 +31,7 @@ public final class McChatSetup {
      *
      * @param plugin The JavaPlugin instance
      */
-    private McChatSetup(JavaPlugin plugin) {
+    public McChatSetup(JavaPlugin plugin) {
         this.plugin = plugin;
         this.sessionManager = new ChatSessionManager(plugin);
         this.builder = ChatSessionBuilder.create(plugin);
