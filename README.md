@@ -49,12 +49,12 @@ Add McChatSetup to your plugin:
     <dependency>
         <groupId>com.mongenscave</groupId>
         <artifactId>mc-ChatSetup</artifactId>
-        <version>1.0.3</version>
+        <version>1.0.4</version>
     </dependency>
 </dependencies>
 ```
 
-**Gradle:**
+**Gradle Groovy**
 ```gradle
 repositories {
     maven {
@@ -63,7 +63,18 @@ repositories {
 }
 
 dependencies {
-    implementation 'com.mongenscave:mc-ChatSetup:1.0.3'
+    implementation 'com.mongenscave:mc-ChatSetup:1.0.4'
+}
+```
+
+**Gradle Kotlin**
+```kotlin
+repositories {
+    maven("https://repo.mongenscave.com/releases")
+}
+
+dependencies {
+    implementation("com.mongenscave:mc-ChatSetup:1.0.4")
 }
 ```
 

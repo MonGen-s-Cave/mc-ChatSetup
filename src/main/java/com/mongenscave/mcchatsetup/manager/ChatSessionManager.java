@@ -13,20 +13,21 @@ import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
  * Main service class for managing chat sessions.
  * Handles session lifecycle, event registration, and timeout management.
+ * Uses UUID-based session tracking instead of ChatSession objects as keys.
  */
 public final class ChatSessionManager {
     private final JavaPlugin plugin;
     private final MessageFormatter messageFormatter;
     private final PlayerFilterService playerFilterService;
-    private final ConcurrentMap<ChatSession, SessionContext> activeSessions;
+    private final ConcurrentMap<UUID, ActiveSession> activeSessions;
 
     public ChatSessionManager(@NotNull JavaPlugin plugin) {
         this.plugin = plugin;
@@ -42,7 +43,9 @@ public final class ChatSessionManager {
      * @throws IllegalStateException if no players are added to the session
      */
     public void startSession(@NotNull ChatSession session) {
-        if (session.isEmpty()) throw new IllegalStateException("No players added to ChatSession");
+        if (session.isEmpty()) {
+            throw new IllegalStateException("No players added to ChatSession");
+        }
 
         filterPlayersIfNeeded(session);
 
@@ -53,26 +56,27 @@ public final class ChatSessionManager {
 
         session.getOnStart().run();
 
-        ChatEventHandler eventHandler = new ChatEventHandler(plugin, this, session);
+        UUID sessionId = UUID.randomUUID();
+        ChatEventHandler eventHandler = new ChatEventHandler(plugin, this, session, sessionId);
         plugin.getServer().getPluginManager().registerEvents(eventHandler, plugin);
 
         sendMessageToPlayers(session);
 
-        BukkitTask timeoutTask = createTimeoutTask(session);
+        BukkitTask timeoutTask = createTimeoutTask(sessionId, session);
 
-        SessionContext context = new SessionContext(eventHandler, timeoutTask);
-        activeSessions.put(session, context);
+        ActiveSession activeSession = new ActiveSession(session, eventHandler, timeoutTask);
+        activeSessions.put(sessionId, activeSession);
     }
 
     /**
      * Ends an active chat session and cleans up resources.
      *
-     * @param session The session to end
+     * @param sessionId The session ID to end
      */
-    public void endSession(@NotNull ChatSession session) {
-        SessionContext context = activeSessions.remove(session);
-        if (context != null) {
-            cleanup(context);
+    public void endSession(@NotNull UUID sessionId) {
+        ActiveSession activeSession = activeSessions.remove(sessionId);
+        if (activeSession != null) {
+            cleanup(activeSession);
         }
     }
 
@@ -90,11 +94,11 @@ public final class ChatSessionManager {
     /**
      * Checks if a session is currently active.
      *
-     * @param session The session to check
+     * @param sessionId The session ID to check
      * @return true if the session is active
      */
-    public boolean isSessionActive(@NotNull ChatSession session) {
-        return activeSessions.containsKey(session);
+    public boolean isSessionActive(@NotNull UUID sessionId) {
+        return activeSessions.containsKey(sessionId);
     }
 
     /**
@@ -110,9 +114,17 @@ public final class ChatSessionManager {
      * Ends all active sessions.
      */
     public void endAllSessions() {
-        for (ChatSession session : new HashSet<>(activeSessions.keySet())) {
-            endSession(session);
-        }
+        activeSessions.keySet().forEach(this::endSession);
+    }
+
+    /**
+     * Gets an active session by ID.
+     *
+     * @param sessionId The session ID
+     * @return The active session, or null if not found
+     */
+    public ActiveSession getActiveSession(@NotNull UUID sessionId) {
+        return activeSessions.get(sessionId);
     }
 
     /**
@@ -146,33 +158,37 @@ public final class ChatSessionManager {
     /**
      * Creates a timeout task for the session.
      *
-     * @param session The session to create a timeout for
+     * @param sessionId The session ID
+     * @param session The session configuration
      * @return The created BukkitTask
      */
-    private @NotNull BukkitTask createTimeoutTask(@NotNull ChatSession session) {
+    private @NotNull BukkitTask createTimeoutTask(@NotNull UUID sessionId, @NotNull ChatSession session) {
         return new BukkitRunnable() {
             @Override
             public void run() {
-                endSession(session);
+                endSession(sessionId);
                 session.getOnFail().run();
             }
         }.runTaskLater(plugin, session.getTimeLimit().toSeconds() * 20L);
     }
 
     /**
-     * Cleans up resources for a session context.
+     * Cleans up resources for an active session.
      *
-     * @param context The session context to clean up
+     * @param activeSession The active session to clean up
      */
-    private void cleanup(@NotNull SessionContext context) {
-        if (!context.timeoutTask().isCancelled()) context.timeoutTask().cancel();
-        HandlerList.unregisterAll(context.eventHandler());
+    private void cleanup(@NotNull ActiveSession activeSession) {
+        if (!activeSession.timeoutTask().isCancelled()) {
+            activeSession.timeoutTask().cancel();
+        }
+        HandlerList.unregisterAll(activeSession.eventHandler());
     }
 
     /**
-     * Internal record to hold session context data.
+     * Record representing an active session with all its components.
      */
-    private record SessionContext(@NotNull ChatEventHandler eventHandler,
-                                  @NotNull BukkitTask timeoutTask) {
+    public record ActiveSession(@NotNull ChatSession session,
+                                @NotNull ChatEventHandler eventHandler,
+                                @NotNull BukkitTask timeoutTask) {
     }
 }
