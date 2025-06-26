@@ -89,17 +89,11 @@ public class MyPlugin extends JavaPlugin {
         // Simple input prompt with timeout
         McChatSetup.empty(this)
             .addPlayer(player)
-            .append("&aEnter your message within {time} seconds! &cType &4{cancel} &cto cancel")
+            .append("&aEnter your message within <time> seconds! &cType &4<cancel> &cto cancel")
             .setTime(30)
-            .onInput(input -> {
-                player.sendMessage("You entered: " + input);
-            })
-            .onSuccess(() -> {
-                player.sendMessage("&aInput received successfully!");
-            })
-            .onFail(() -> {
-                player.sendMessage("&cTime's up! No input received.");
-            })
+            .onInput(input -> player.sendMessage("You entered: " + input))
+            .onSuccess(() -> player.sendMessage("&aInput received successfully!"))
+            .onFail(() -> player.sendMessage("&cTime's up! No input received."))
             .build();
     }
 }
@@ -129,8 +123,8 @@ Your prompt messages support dynamic placeholders:
 
 | Placeholder | Description | Example |
 |-------------|-------------|---------|
-| `{time}` | Current timeout in seconds | `"You have {time} seconds"` |
-| `{cancel}` | Current cancel command | `"Type {cancel} to cancel"` |
+| `<time>` | Current timeout in seconds | `"You have <time> seconds"` |
+| `<cancel>` | Current cancel command | `"Type <cancel> to cancel"` |
 
 ## 🎯 Usage Examples
 
@@ -230,7 +224,7 @@ private void completeRegistration(Player player, String username, String email, 
 // Use custom cancel command
 McChatSetup.empty(plugin)
     .addPlayer(player)
-    .append("&aEnter your guild name. Type &e{cancel} &ato cancel.")
+    .append("&aEnter your guild name. Type &e<cancel> &ato cancel.")
     .setCancel("quit")  // Players type "quit" to cancel
     .setTime(45)
     .onInput(guildName -> {
