@@ -1,6 +1,7 @@
 package com.mongenscave.mcchatsetup;
 
 import com.mongenscave.mcchatsetup.builder.ChatSessionBuilder;
+import com.mongenscave.mcchatsetup.identifiers.InputType;
 import com.mongenscave.mcchatsetup.manager.ChatSessionManager;
 import com.mongenscave.mcchatsetup.model.ChatSession;
 import lombok.Getter;
@@ -15,19 +16,19 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
- * Main facade class for EasierChatSetup.
+ * Main facade class for McChatSetup.
  * Provides a simplified interface for creating and managing chat sessions.
- * This class maintains backward compatibility with the original API.
+ * This class maintains backward compatibility with the original API while supporting
+ * new input types like ANVIL and SIGN.
  */
 public final class McChatSetup {
 
     @Getter private final JavaPlugin plugin;
-
     @Getter private final ChatSessionManager sessionManager;
     private final ChatSessionBuilder builder;
 
     /**
-     * Creates a new EasierChatSetup instance with the specified plugin.
+     * Creates a new McChatSetup instance with the specified plugin.
      *
      * @param plugin The JavaPlugin instance
      */
@@ -38,9 +39,9 @@ public final class McChatSetup {
     }
 
     /**
-     * Creates an empty EasierChatSetup instance.
+     * Creates an empty McChatSetup instance.
      *
-     * @return A new EasierChatSetup instance
+     * @return A new McChatSetup instance
      */
     public static @NotNull McChatSetup empty() {
         JavaPlugin mainPlugin = JavaPlugin.getProvidingPlugin(McChatSetup.class);
@@ -48,10 +49,10 @@ public final class McChatSetup {
     }
 
     /**
-     * Creates an empty EasierChatSetup instance with explicit plugin reference.
+     * Creates an empty McChatSetup instance with explicit plugin reference.
      *
      * @param plugin The JavaPlugin instance
-     * @return A new EasierChatSetup instance
+     * @return A new McChatSetup instance
      */
     @Contract("_ -> new")
     public static @NotNull McChatSetup empty(JavaPlugin plugin) {
@@ -182,6 +183,39 @@ public final class McChatSetup {
     }
 
     /**
+     * Sets the input type to CHAT (default).
+     * Players will type their input in chat.
+     *
+     * @return This instance for method chaining
+     */
+    public McChatSetup useChatInput() {
+        builder.withInputType(InputType.CHAT);
+        return this;
+    }
+
+    /**
+     * Sets the input type to SIGN.
+     * Players will input text using a sign editor.
+     *
+     * @return This instance for method chaining
+     */
+    public McChatSetup useSignInput() {
+        builder.withInputType(InputType.SIGN);
+        return this;
+    }
+
+    /**
+     * Sets the input type explicitly.
+     *
+     * @param inputType The input type to use
+     * @return This instance for method chaining
+     */
+    public McChatSetup withInputType(InputType inputType) {
+        builder.withInputType(inputType);
+        return this;
+    }
+
+    /**
      * Starts a chat session with a specific player.
      * This is a convenient method for quick setups.
      *
@@ -195,6 +229,27 @@ public final class McChatSetup {
     }
 
     /**
+     * Starts a quick chat input session with a player.
+     * Equivalent to startSession() but with a more descriptive name.
+     *
+     * @param player The player to start the session with
+     * @return This instance for method chaining
+     */
+    public McChatSetup startChatSession(Player player) {
+        return startSession(player);
+    }
+
+    /**
+     * Starts a quick sign input session with a player.
+     *
+     * @param player The player to start the session with
+     * @return This instance for method chaining
+     */
+    public McChatSetup startSignSession(Player player) {
+        return useSignInput().startSession(player);
+    }
+
+    /**
      * Builds and starts the chat input process.
      */
     public void build() {
@@ -203,11 +258,27 @@ public final class McChatSetup {
     }
 
     /**
+     * Gets the number of currently active sessions.
+     *
+     * @return The number of active sessions
+     */
+    public int getActiveSessionCount() {
+        return sessionManager.getActiveSessionCount();
+    }
+
+    /**
+     * Ends all active sessions managed by this instance.
+     */
+    public void endAllSessions() {
+        sessionManager.endAllSessions();
+    }
+
+    /**
      * Creates a new builder instance for advanced usage.
      *
      * @return A new ChatSessionBuilder
      */
-    public static ChatSessionBuilder builder() {
+    public static @NotNull ChatSessionBuilder builder() {
         return ChatSessionBuilder.create();
     }
 
@@ -217,7 +288,28 @@ public final class McChatSetup {
      * @param plugin The JavaPlugin instance
      * @return A new ChatSessionBuilder
      */
-    public static ChatSessionBuilder builder(JavaPlugin plugin) {
+    @Contract("_ -> new")
+    public static @NotNull ChatSessionBuilder builder(JavaPlugin plugin) {
         return ChatSessionBuilder.create(plugin);
+    }
+
+    /**
+     * Creates a quick chat input setup.
+     *
+     * @param plugin The plugin instance
+     * @return A new McChatSetup instance configured for chat input
+     */
+    public static McChatSetup forChat(JavaPlugin plugin) {
+        return new McChatSetup(plugin).useChatInput();
+    }
+
+    /**
+     * Creates a quick sign input setup.
+     *
+     * @param plugin The plugin instance
+     * @return A new McChatSetup instance configured for sign input
+     */
+    public static McChatSetup forSign(JavaPlugin plugin) {
+        return new McChatSetup(plugin).useSignInput();
     }
 }

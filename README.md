@@ -833,6 +833,21 @@ McChatSetup.empty(plugin)
     .build();
 ```
 
+### Sign setups
+
+```java
+McChatSetup
+        .forSign(plugin)
+        .addPlayer(player)
+        .onInput(input -> getLogger().info(input))
+        .build();
+```
+
+### Setup types
+
+- **SIGN**
+- **CHAT**
+
 ## 🤝 Contributing
 
 We welcome contributions! Here's how you can help:

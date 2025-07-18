@@ -1,5 +1,6 @@
 package com.mongenscave.mcchatsetup.model;
 
+import com.mongenscave.mcchatsetup.identifiers.InputType;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.entity.Player;
@@ -29,6 +30,7 @@ public final class ChatSession {
     @Getter @Setter private Runnable onStart = () -> {};
     @Getter @Setter private Consumer<String> onInput = null;
     @Getter @Setter private Predicate<String> validator = null;
+    @Getter @Setter private InputType inputType = InputType.CHAT;
 
     @Contract(value = " -> new", pure = true)
     public @NotNull Set<Player> getPlayers() {

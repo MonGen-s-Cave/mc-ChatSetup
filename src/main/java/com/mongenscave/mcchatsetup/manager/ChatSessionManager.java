@@ -1,12 +1,14 @@
 package com.mongenscave.mcchatsetup.manager;
 
 import com.mongenscave.mcchatsetup.handler.ChatEventHandler;
+import com.mongenscave.mcchatsetup.handler.SignInputHandler;
 import com.mongenscave.mcchatsetup.model.ChatSession;
 import com.mongenscave.mcchatsetup.service.MessageFormatter;
 import com.mongenscave.mcchatsetup.service.PlayerFilterService;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -57,15 +59,43 @@ public final class ChatSessionManager {
         session.getOnStart().run();
 
         UUID sessionId = UUID.randomUUID();
-        ChatEventHandler eventHandler = new ChatEventHandler(plugin, this, session, sessionId);
+        Listener eventHandler = createEventHandler(session, sessionId);
         plugin.getServer().getPluginManager().registerEvents(eventHandler, plugin);
 
-        sendMessageToPlayers(session);
-
+        handleSessionStart(session, eventHandler);
         BukkitTask timeoutTask = createTimeoutTask(sessionId, session);
 
         ActiveSession activeSession = new ActiveSession(session, eventHandler, timeoutTask);
         activeSessions.put(sessionId, activeSession);
+    }
+
+    /**
+     * Creates the appropriate event handler based on input type.
+     *
+     * @param session The chat session
+     * @param sessionId The session ID
+     * @return The created event handler
+     */
+    private @NotNull Listener createEventHandler(@NotNull ChatSession session, @NotNull UUID sessionId) {
+        return switch (session.getInputType()) {
+            case CHAT -> new ChatEventHandler(plugin, this, session, sessionId);
+            case SIGN -> new SignInputHandler(plugin, this, session, sessionId);
+        };
+    }
+
+    /**
+     * Handles session start based on input type.
+     *
+     * @param session The chat session
+     * @param eventHandler The event handler
+     */
+    private void handleSessionStart(@NotNull ChatSession session, @NotNull Listener eventHandler) {
+        switch (session.getInputType()) {
+            case CHAT -> sendMessageToPlayers(session);
+            case SIGN -> {
+                if (eventHandler instanceof SignInputHandler signHandler) signHandler.openSignForPlayers();
+            }
+        }
     }
 
     /**
@@ -75,9 +105,7 @@ public final class ChatSessionManager {
      */
     public void endSession(@NotNull UUID sessionId) {
         ActiveSession activeSession = activeSessions.remove(sessionId);
-        if (activeSession != null) {
-            cleanup(activeSession);
-        }
+        if (activeSession != null) cleanup(activeSession);
     }
 
     /**
@@ -181,6 +209,11 @@ public final class ChatSessionManager {
         if (!activeSession.timeoutTask().isCancelled()) {
             activeSession.timeoutTask().cancel();
         }
+
+        if (activeSession.eventHandler() instanceof SignInputHandler signHandler) {
+            signHandler.cleanup();
+        }
+
         HandlerList.unregisterAll(activeSession.eventHandler());
     }
 
@@ -188,7 +221,7 @@ public final class ChatSessionManager {
      * Record representing an active session with all its components.
      */
     public record ActiveSession(@NotNull ChatSession session,
-                                @NotNull ChatEventHandler eventHandler,
+                                @NotNull Listener eventHandler,
                                 @NotNull BukkitTask timeoutTask) {
     }
 }

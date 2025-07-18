@@ -1,5 +1,6 @@
 package com.mongenscave.mcchatsetup.builder;
 
+import com.mongenscave.mcchatsetup.identifiers.InputType;
 import com.mongenscave.mcchatsetup.model.ChatSession;
 import lombok.Getter;
 import org.bukkit.entity.Player;
@@ -51,7 +52,6 @@ public final class ChatSessionBuilder {
      *
      * @param player The player to add
      */
-    @Contract("_ -> this")
     public void addPlayer(Player player) {
         session.addPlayer(player);
     }
@@ -148,6 +148,16 @@ public final class ChatSessionBuilder {
      */
     public void listenTo(Collection<?> collection) {
         session.setListenerCollection(collection);
+    }
+
+    /**
+     * Sets the input type for the session.
+     * Determines how the player will provide input (CHAT, ANVIL, or SIGN).
+     *
+     * @param inputType The input type to use
+     */
+    public void withInputType(InputType inputType) {
+        session.setInputType(inputType);
     }
 
     /**
